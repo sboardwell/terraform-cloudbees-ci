@@ -8,8 +8,6 @@ provider "helm" {
   }
 }
 
-provider "sops" {}
-
 locals {
   ingress_annotations = lookup({
     alb = {
@@ -56,10 +54,6 @@ module "cloudbees_cd" {
 ################################################################################
 # CloudBees CI
 ################################################################################
-
-data "sops_file" "demo-secret" {
-  source_file = "values/secrets.enc.yaml"
-}
 
 locals {
   install_ci  = alltrue([var.install_ci, var.ci_host_name != ""])

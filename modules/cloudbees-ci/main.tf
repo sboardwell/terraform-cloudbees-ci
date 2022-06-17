@@ -33,6 +33,7 @@ locals {
 
   create_bundle = length(var.bundle_data) != 0
   create_secret = length(var.secret_data) != 0
+  create_casc_secrets_mc = length(var.casc_secrets_mc_data) != 0
 
   optional_values = {
     "OperationsCenter.Image.dockerImage" = var.cjoc_image
@@ -149,6 +150,8 @@ resource "kubernetes_config_map" "casc_bundle" {
   metadata {
     name      = var.bundle_configmap_name
     namespace = var.namespace
+    annotations = {}
+    labels = {}
   }
 
   data = var.bundle_data
@@ -161,9 +164,25 @@ resource "kubernetes_secret" "secrets" {
   metadata {
     name      = var.secret_name
     namespace = var.namespace
+    annotations = {}
+    labels = {}
   }
 
   data = var.secret_data
+}
+
+resource "kubernetes_secret" "casc_secrets_mc" {
+  for_each   = local.create_casc_secrets_mc ? local.this : []
+  depends_on = [kubernetes_namespace.this]
+
+  metadata {
+    name      = var.casc_secrets_mc_name
+    namespace = var.namespace
+    annotations = {}
+    labels = {}
+  }
+
+  data = var.casc_secrets_mc_data
 }
 
 resource "kubernetes_manifest" "service_monitor" {

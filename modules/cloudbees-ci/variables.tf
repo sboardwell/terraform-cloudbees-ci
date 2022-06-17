@@ -99,6 +99,16 @@ variable "secret_name" {
   default = "oc-secrets"
 }
 
+variable "casc_secrets_mc_data" {
+  default = {}
+  type    = map(any)
+}
+
+variable "casc_secrets_mc_name" {
+  description = "WARNING: this value is use in the masterProvisioning.yaml"
+  default = "casc-secrets-mc"
+}
+
 variable "storage_class" {
   default = ""
 }
