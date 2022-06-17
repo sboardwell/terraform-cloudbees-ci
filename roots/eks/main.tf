@@ -84,20 +84,22 @@ module "vpc" {
   name                 = "${local.cluster_name}-vpc"
   cidr                 = var.cidr_block
   azs                  = local.availability_zones
-  private_subnets      = [for i in range(0, var.zone_count) : cidrsubnet(var.cidr_block, 8, 100 +  i)]
-  public_subnets       = [for i in range(0, var.zone_count) : cidrsubnet(var.cidr_block, 8, 200 +  i)]
+  private_subnets      = [for i in range(0, var.zone_count) : cidrsubnet(var.cidr_block, 4, i)]
+  public_subnets       = [for i in range(0, var.zone_count) : cidrsubnet(var.cidr_block, 4, var.zone_count +  i)]
   enable_nat_gateway   = true
   single_nat_gateway   = true
   enable_dns_hostnames = true
 
   public_subnet_tags = {
     "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-    "kubernetes.io/role/elb"                    = "1"
+    "kubernetes.io/role/elb"                      = "1"
+    "subnet-type"                                 = "public"
   }
 
   private_subnet_tags = {
     "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/role/internal-elb"             = "1"
+    "subnet-type"                                 = "private"
   }
 
   tags = local.vpc_tags
@@ -300,6 +302,7 @@ resource "null_resource" "update_kubeconfig" {
 }
 
 resource "null_resource" "update_default_storage_class" {
+  depends_on = [module.ebs_driver, module.efs_driver]
   count = (var.create_kubeconfig_file && var.update_default_storage_class) ? 1 : 0
 
   provisioner "local-exec" {
