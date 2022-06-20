@@ -12,7 +12,7 @@ ACTION ?= plan
 
 .PHONY: %/P
 %/P: ## Terraform plan on roots/% (no planfile)
-	terraform -chdir=roots/$* plan -out tfplan
+	terraform -chdir=roots/$* plan
 
 .PHONY: %/a
 %/a: ## Terraform apply on roots/%
