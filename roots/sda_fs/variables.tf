@@ -157,12 +157,14 @@ variable "create_servicemonitors" {
 }
 
 variable "mc_bundle_dir" {
-  default = "cbci-casc-bundles"
+  description = "Path relative to root module. Represents directory next this repository."
+  default = "../../../cbci-casc-bundles"
   type    = string
 }
 
 variable "bundle_dir" {
-  default = "oc-casc-bundle"
+  description = "Path relative to root module. Represents directory next this repository."
+  default = "../../../oc-casc-bundle"
   type    = string
 }
 
@@ -217,7 +219,8 @@ variable "oc_enabled" {
 }
 
 variable "secrets_file" {
-  default = "values/secrets.yaml"
+  description = "Path to secrets file. Placing in home directory by default to avoid clusttering the repo."
+  default = "~/.secrets.yaml"
   type    = string
 }
 

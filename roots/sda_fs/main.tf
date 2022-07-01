@@ -132,6 +132,7 @@ module "sda1" {
   ingress_class = "alb"
   install_ci = var.install_ci
   kubeconfig_file = module.eks1.kubeconfig_filename
+  bundle_dir =  var.bundle_dir
   oc_enabled = var.oc_enabled
   secrets_file = var.secrets_file
   storage_class = var.storage_class
@@ -154,6 +155,7 @@ module "sda2" {
   ingress_class = "alb"
   install_ci = var.install_ci
   kubeconfig_file = module.eks2.kubeconfig_filename
+  bundle_dir =  var.bundle_dir
   oc_enabled = var.oc_enabled
   secrets_file = var.secrets_file
   ci_namespace = var.ci_namespace
