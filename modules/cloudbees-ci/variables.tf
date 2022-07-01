@@ -12,6 +12,11 @@ variable "bundle_data" {
   type    = map(any)
 }
 
+variable "mc_bundle_data" {
+  default = {}
+  type    = map(any)
+}
+
 variable "chart_repository" {
   default = "https://charts.cloudbees.com/public/cloudbees"
 }
@@ -58,6 +63,11 @@ variable "cjoc_image" {
   type    = string
 }
 
+variable "cjoc_enabled" {
+  default = true
+  type    = bool
+}
+
 variable "cpu_request" {
   default = 2
   type    = number
@@ -93,6 +103,10 @@ variable "secret_data" {
 
 variable "secret_mount_path" {
   default = "/var/run/secrets/cjoc"
+}
+
+variable "mc_bundle_base_mount_path" {
+  default = "/var/run/mc_bundle_base_path"
 }
 
 variable "secret_name" {

@@ -6,6 +6,14 @@ MKFILE_DIR		:=  $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 ACTION ?= plan
 
 
+.PHONY: %/i
+%/i: ## Terraform init on roots/%
+	terraform -chdir=roots/$* init
+
+.PHONY: %/iu
+%/iu: ## Terraform init -upgrade on roots/%
+	terraform -chdir=roots/$* init -upgrade
+
 .PHONY: %/p
 %/p: ## Terraform plan on roots/%
 	terraform -chdir=roots/$* plan -out tfplan
@@ -33,6 +41,10 @@ ACTION ?= plan
 .PHONY: %/o
 %/o: ## Terraform output on roots/%
 	terraform -chdir=roots/$* output
+
+.PHONY: %/O
+%/O: ## Terraform output in json format on roots/% (for use with jq, etc)
+	@terraform -chdir=roots/$* output -json
 
 .ONESHELL:
 eks: ## Run terraform $ACTION on roots/eks

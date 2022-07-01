@@ -3,7 +3,9 @@ variable "ingress_class" {
   type = string
 }
 
+# Common configuration
 variable "platform" {
+  default = "eks"
   type = string
 
   validation {
@@ -12,7 +14,6 @@ variable "platform" {
   }
 }
 
-# Common configuration
 variable "kubeconfig_file" {
   default = "~/.kube/config"
   type    = string
@@ -48,6 +49,11 @@ variable "bundle_dir" {
   type    = string
 }
 
+variable "mc_bundle_dir" {
+  default = "cbci-casc-bundles"
+  type    = string
+}
+
 variable "ci_chart_repository" {
   default = "https://charts.cloudbees.com/public/cloudbees"
   type    = string
@@ -65,6 +71,11 @@ variable "ci_host_name" {
 
 variable "ci_namespace" {
   default = "cloudbees-ci"
+  type    = string
+}
+
+variable "cluster_name" {
+  default = ""
   type    = string
 }
 
@@ -93,9 +104,19 @@ variable "oc_image" {
   type    = string
 }
 
+variable "oc_enabled" {
+  default = true
+  type    = bool
+}
+
 variable "secrets_file" {
   default = "values/secrets.yaml"
   type    = string
+}
+
+variable "additional_secret_data" {
+  default = {}
+  type    = map(any)
 }
 
 variable "storage_class" {

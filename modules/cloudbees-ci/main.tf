@@ -35,6 +35,9 @@ locals {
   create_secret = length(var.secret_data) != 0
   create_casc_secrets_mc = length(var.casc_secrets_mc_data) != 0
 
+  mc_bundle_data = var.mc_bundle_data
+  create_mc_bundle = length(local.mc_bundle_data) != 0
+
   optional_values = {
     "OperationsCenter.Image.dockerImage" = var.cjoc_image
     "Master.Image.dockerImage"           = var.controller_image
@@ -51,18 +54,36 @@ locals {
         }
       ]
 
-      ExtraVolumes = [{
-        name = var.secret_name
-        secret = {
-          defaultMode = 0400
-          secretName  = var.secret_name
-        }
-      }]
+      ExtraVolumes = concat(
+        [{
+          name = var.secret_name
+          secret = {
+            defaultMode = 0400
+            secretName  = var.secret_name
+          }
+        }],
+        [
+          for mc_bundle in keys(local.mc_bundle_data) : {
+            name = "mc-casc-bundle-${lower(replace(mc_bundle,"/\\W|_|\\s/","-"))}"
+            configMap = {
+              name  = "mc-casc-bundle-${lower(replace(mc_bundle,"/\\W|_|\\s/","-"))}"
+            }
+          }
+        ]
+      )
 
-      ExtraVolumeMounts = [{
-        name      = var.secret_name
-        mountPath = var.secret_mount_path
-      }]
+      ExtraVolumeMounts = concat(
+        [{
+          name      = var.secret_name
+          mountPath = var.secret_mount_path
+        }],
+        [
+        for mc_bundle in keys(local.mc_bundle_data) : {
+          name = "mc-casc-bundle-${lower(replace(mc_bundle,"/\\W|_|\\s/","-"))}"
+          mountPath = "${var.mc_bundle_base_mount_path}/${mc_bundle}"
+        }
+        ]
+      )
     }
   }) : ""
 
@@ -85,6 +106,7 @@ locals {
 
   values = yamlencode({
     OperationsCenter = {
+      Enabled = var.cjoc_enabled
       Platform = var.platform
       HostName = var.host_name
       Protocol = "https"
@@ -155,6 +177,20 @@ resource "kubernetes_config_map" "casc_bundle" {
   }
 
   data = var.bundle_data
+}
+
+resource "kubernetes_config_map" "mc_casc_bundles" {
+  for_each   = local.create_mc_bundle ? local.mc_bundle_data : {}
+  depends_on = [kubernetes_namespace.this]
+
+  metadata {
+    name      = "mc-casc-bundle-${lower(replace(each.key,"/\\W|_|\\s/","-"))}"
+    namespace = var.namespace
+    annotations = {}
+    labels = {}
+  }
+
+  data = each.value
 }
 
 resource "kubernetes_secret" "secrets" {

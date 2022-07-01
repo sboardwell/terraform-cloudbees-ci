@@ -5,6 +5,17 @@ variable "cluster_name" {
 
 variable "domain_name" {
   type = string
+  default = ""
+}
+
+variable "base_domain" {
+  type = string
+  default = ""
+}
+
+variable "sub_domain" {
+  type = string
+  default = ""
 }
 
 # Optional variables
@@ -73,7 +84,7 @@ variable "kubernetes_version" {
   type    = string
 
   validation {
-    condition     = contains(["1.19", "1.20", "1.21"], var.kubernetes_version)
+    condition     = contains(["1.19", "1.20", "1.21", "1.22"], var.kubernetes_version)
     error_message = "Provided Kubernetes version is not supported by EKS and/or CloudBees."
   }
 }

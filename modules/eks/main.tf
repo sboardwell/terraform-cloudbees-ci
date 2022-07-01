@@ -1,23 +1,3 @@
-provider "aws" {
-  default_tags {
-    tags = var.tags
-  }
-}
-
-provider "kubernetes" {
-  host                   = local.cluster_endpoint
-  cluster_ca_certificate = local.cluster_ca_certificate
-  token                  = local.cluster_auth_token
-}
-
-provider "helm" {
-  kubernetes {
-    host                   = local.cluster_endpoint
-    cluster_ca_certificate = local.cluster_ca_certificate
-    token                  = local.cluster_auth_token
-  }
-}
-
 data "aws_caller_identity" "current" {}
 data "aws_availability_zones" "available" {}
 
@@ -28,7 +8,8 @@ data "aws_eks_cluster_auth" "auth" {
 data "aws_region" "current" {}
 
 data "aws_route53_zone" "domain" {
-  name = var.domain_name
+  count = !local.create_zone ? 1 : 0
+  name = local.domain_name
 }
 
 locals {
@@ -41,7 +22,7 @@ locals {
   cluster_name           = "${var.cluster_name}${local.workspace_suffix}"
   default_storage_class  = "gp2"
   ingress_class_name     = "alb"
-  kubeconfig_file        = "${path.cwd}/${var.kubeconfig_file}"
+  kubeconfig_file        = "${abspath(path.root)}/${var.kubeconfig_file}_${local.cluster_name}"
   oidc_issuer            = trimprefix(module.eks.cluster_oidc_issuer_url, "https://")
   oidc_provider_arn      = module.eks.oidc_provider_arn
   this                   = toset(["this"])
@@ -70,6 +51,9 @@ locals {
       }
     }
   }
+  create_zone = alltrue([var.base_domain != "", var.sub_domain != ""])
+  domain_name = local.create_zone ? "${var.sub_domain}.${var.base_domain}" : "${var.domain_name}"
+  domain_id = local.create_zone ? aws_route53_zone.sub_domain[0].id : data.aws_route53_zone.domain[0].id
 }
 
 
@@ -107,7 +91,7 @@ module "vpc" {
 
 module "bastion" {
   for_each = var.bastion_enabled ? local.this : []
-  source   = "../../modules/aws-bastion"
+  source   = "../aws-bastion"
 
   key_name                 = var.key_name
   resource_prefix          = local.cluster_name
@@ -123,7 +107,7 @@ module "bastion" {
 ################################################################################
 
 module "iam" {
-  source = "../../modules/eks-iam-roles"
+  source = "../eks-iam-roles"
 
   cluster_name = local.cluster_name
 }
@@ -191,16 +175,46 @@ module "eks" {
   }
 }
 
+################################################################################
+# Hosted Zone
+################################################################################
+
+data "aws_route53_zone" "base_domain" {
+  count = (local.create_zone) ? 1 : 0
+  name         = var.base_domain
+  private_zone = false
+}
+
+resource "aws_route53_zone" "sub_domain" {
+  count = (local.create_zone) ? 1 : 0
+  name = "${local.domain_name}"
+  comment = "Managed by Terraform, Delegated Sub Zone for ${local.domain_name}"
+  tags = var.tags
+  force_destroy = true
+}
+
+resource "aws_route53_record" "aws_sub_zone_ns" {
+  count = (local.create_zone) ? 1 : 0
+  zone_id = "${data.aws_route53_zone.base_domain[0].zone_id}"
+  name = "${local.domain_name}"
+  type    = "NS"
+  ttl     = "30"
+  records = [
+    for awsns in aws_route53_zone.sub_domain.0.name_servers:
+    awsns
+  ]
+}
 
 ################################################################################
 # Amazon Certificate Manager certificate(s)
 ################################################################################
 
 module "acm_certificate" {
+  depends_on = [aws_route53_record.aws_sub_zone_ns, data.aws_route53_zone.domain]
   for_each = var.create_acm_certificate ? local.this : []
-  source   = "../../modules/acm-certificate"
+  source   = "../acm-certificate"
 
-  domain_name = var.domain_name
+  domain_name = local.domain_name
   subdomain   = "*"
 }
 
@@ -211,7 +225,7 @@ module "acm_certificate" {
 
 module "aws_load_balancer_controller" {
   depends_on = [module.acm_certificate, module.eks]
-  source     = "../../modules/aws-load-balancer-controller"
+  source     = "../aws-load-balancer-controller"
 
   aws_account_id            = local.aws_account_id
   aws_region                = local.aws_region
@@ -223,7 +237,7 @@ module "aws_load_balancer_controller" {
 
 module "cluster_autoscaler" {
   depends_on = [module.eks]
-  source     = "../../modules/cluster-autoscaler-eks"
+  source     = "../cluster-autoscaler-eks"
 
   aws_account_id     = local.aws_account_id
   aws_region         = local.aws_region
@@ -235,7 +249,7 @@ module "cluster_autoscaler" {
 
 module "ebs_driver" {
   depends_on = [module.eks]
-  source     = "../../modules/aws-ebs-csi-driver"
+  source     = "../aws-ebs-csi-driver"
 
   aws_account_id   = local.aws_account_id
   aws_region       = local.aws_region
@@ -246,7 +260,7 @@ module "ebs_driver" {
 
 module "efs_driver" {
   depends_on = [module.eks]
-  source     = "../../modules/aws-efs-csi-driver"
+  source     = "../aws-efs-csi-driver"
 
   aws_account_id         = local.aws_account_id
   aws_region             = local.aws_region
@@ -259,20 +273,20 @@ module "efs_driver" {
 
 module "external_dns" {
   depends_on = [module.eks]
-  source     = "../../modules/external-dns-eks"
+  source     = "../external-dns-eks"
 
   aws_account_id  = local.aws_account_id
   cluster_name    = local.cluster_name
   oidc_issuer     = local.oidc_issuer
-  route53_zone_id = data.aws_route53_zone.domain.id
+  route53_zone_id = local.domain_id
 }
 
 module "kubernetes_dashboard" {
   depends_on = [module.aws_load_balancer_controller]
   for_each   = var.install_kubernetes_dashboard ? local.this : []
-  source     = "../../modules/kubernetes-dashboard"
+  source     = "../kubernetes-dashboard"
 
-  host_name           = "${var.dashboard_subdomain}.${var.domain_name}"
+  host_name           = "${var.dashboard_subdomain}.${local.domain_name}"
   ingress_annotations = local.alb_annotations
   ingress_class_name  = local.ingress_class_name
 }
@@ -280,9 +294,9 @@ module "kubernetes_dashboard" {
 module "prometheus" {
   depends_on = [module.aws_load_balancer_controller]
   for_each   = var.install_prometheus ? local.this : []
-  source     = "../../modules/prometheus"
+  source     = "../prometheus"
 
-  host_name           = "${var.grafana_subdomain}.${var.domain_name}"
+  host_name           = "${var.grafana_subdomain}.${local.domain_name}"
   ingress_annotations = local.alb_annotations
   ingress_class_name  = local.ingress_class_name
   ingress_extra_paths = [local.alb_redirect_path]

@@ -7,11 +7,15 @@ terraform {
     }
 
     helm = {
-      version = ">= 2.3.0"
+      version = ">= 2.5.0"
     }
 
     kubernetes = {
       version = ">= 2.5.0"
+    }
+    sops = {
+      source = "carlpett/sops"
+      version = "0.7.1"
     }
   }
 }
