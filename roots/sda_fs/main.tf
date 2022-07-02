@@ -13,7 +13,7 @@ provider "kubernetes" {
     args        = ["eks", "get-token", "--cluster-name", module.eks1.cluster_name]
     command     = "aws"
   }
-}
+} 
 
 provider "helm" {
   alias = "eks1"
@@ -71,19 +71,21 @@ data "external" "sa2" {
 locals {
   ci_host_name1 = "ci.${module.eks1.domain_name}"
   ci_host_name2 = "ci.${module.eks2.domain_name}"
+  // NOTE: the hard-coded url is needed due to https://github.com/jenkinsci/configuration-as-code-plugin/issues/2015
   additional_secret_data1 = alltrue([data.external.sa1.result.status == "success", data.external.sa2.result.status == "success"]) ? {
-    "sa-jenkins-local-jenkins-url": local.ci_host_name1,
+    "sa-jenkins-local-jenkins-url": "https://${local.ci_host_name1}/releases-r23322",
     "sa-jenkins-local.yaml": data.external.sa1.result.out,
     "sa-jenkins-local-namespace": var.ci_namespace,
-    "sa-jenkins-remote-jenkins-url": local.ci_host_name2,
+    "sa-jenkins-remote-jenkins-url": "https://${local.ci_host_name2}/releases-r23322",
     "sa-jenkins-remote.yaml": data.external.sa2.result.out,
     "sa-jenkins-remote-namespace": var.ci_namespace
     } : {}
+  // NOTE: the hard-coded url is needed due to https://github.com/jenkinsci/configuration-as-code-plugin/issues/2015
   additional_secret_data2 = alltrue([data.external.sa1.result.status == "success", data.external.sa2.result.status == "success"]) ? {
-    "sa-jenkins-remote-jenkins-url": local.ci_host_name1,
+    "sa-jenkins-remote-jenkins-url": "https://${local.ci_host_name1}/releases-r23322",
     "sa-jenkins-remote.yaml": data.external.sa1.result.out,
     "sa-jenkins-remote-namespace": var.ci_namespace,
-    "sa-jenkins-local-jenkins-url": local.ci_host_name2,
+    "sa-jenkins-local-jenkins-url": "https://${local.ci_host_name2}/releases-r23322",
     "sa-jenkins-local.yaml": data.external.sa2.result.out,
     "sa-jenkins-local-namespace": var.ci_namespace
     } : {}
@@ -149,7 +151,7 @@ module "sda2" {
     helm = helm.eks2
   }
 
-  additional_secret_data = local.additional_secret_data1
+  additional_secret_data = local.additional_secret_data2
   ci_host_name = "ci.c2.sboardwell.core.pscbdemos.com"
   cluster_name = module.eks2.cluster_name
   ingress_class = "alb"
