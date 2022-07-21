@@ -13,7 +13,7 @@ provider "kubernetes" {
     args        = ["eks", "get-token", "--cluster-name", module.eks1.cluster_name]
     command     = "aws"
   }
-} 
+}
 
 provider "helm" {
   alias = "eks1"
@@ -103,6 +103,8 @@ module "eks1" {
   sub_domain = "c1" # var.sub_domain
   cluster_name = "sbo-tf-ci-c1" # var.cluster_name
   tags = var.tags
+
+  install_prometheus = var.install_prometheus
 }
 
 module "eks2" {
@@ -135,6 +137,7 @@ module "sda1" {
   install_ci = var.install_ci
   kubeconfig_file = module.eks1.kubeconfig_filename
   bundle_dir =  var.bundle_dir
+  mc_bundle_dir =  var.mc_bundle_dir
   oc_enabled = var.oc_enabled
   secrets_file = var.secrets_file
   storage_class = var.storage_class
@@ -155,7 +158,7 @@ module "sda2" {
   ci_host_name = "ci.c2.sboardwell.core.pscbdemos.com"
   cluster_name = module.eks2.cluster_name
   ingress_class = "alb"
-  install_ci = var.install_ci
+  install_ci = false
   kubeconfig_file = module.eks2.kubeconfig_filename
   bundle_dir =  var.bundle_dir
   oc_enabled = var.oc_enabled
