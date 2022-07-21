@@ -49,7 +49,7 @@ locals {
   mc_bundles = [ for file in fileset(local.mc_bundle_dir, "**/bundle.yaml") : basename(dirname("${file}")) ]
   mc_bundle_data = {
     for mc_single_bundle in local.mc_bundles : mc_single_bundle => {
-      for mc_bundle_file in fileset("${local.mc_bundle_dir}/${mc_single_bundle}", "*.{yml,yaml}") : mc_bundle_file => "cbci-casc-bundles/${mc_single_bundle}/${mc_bundle_file}"
+      for mc_bundle_file in fileset("${local.mc_bundle_dir}/${mc_single_bundle}", "*.{yml,yaml}") : mc_bundle_file => file("${local.mc_bundle_dir}/${mc_single_bundle}/${mc_bundle_file}")
     }
   }
   install_ci  = alltrue([var.install_ci, var.ci_host_name != ""])
