@@ -113,6 +113,7 @@ module "iam" {
 }
 
 module "eks" {
+  depends_on = [module.vpc]
   source  = "terraform-aws-modules/eks/aws"
   version = "18.17.0"
 
