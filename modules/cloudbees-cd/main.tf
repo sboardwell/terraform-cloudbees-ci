@@ -1,6 +1,8 @@
 resource "kubernetes_namespace" "this" {
   metadata {
     name = var.namespace
+    annotations = {}
+    labels = {}
   }
 }
 
@@ -8,6 +10,8 @@ resource "kubernetes_secret" "this" {
   metadata {
     name      = "flow-license"
     namespace = kubernetes_namespace.this.metadata.0.name
+    annotations = {}
+    labels = {}
   }
 
   data = {

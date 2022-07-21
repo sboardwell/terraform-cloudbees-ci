@@ -1,6 +1,8 @@
 resource "kubernetes_namespace" "this" {
   metadata {
     name = var.namespace
+    annotations = {}
+    labels = {}
   }
 }
 
@@ -18,12 +20,16 @@ resource "kubernetes_service_account" "this" {
   metadata {
     name      = "admin-user"
     namespace = "kube-system"
+    annotations = {}
+    labels = {}
   }
 }
 
 resource "kubernetes_cluster_role_binding" "this" {
   metadata {
     name = "admin-user"
+    annotations = {}
+    labels = {}
   }
 
   role_ref {

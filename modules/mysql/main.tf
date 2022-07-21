@@ -1,6 +1,8 @@
 resource "kubernetes_namespace" "this" {
   metadata {
     name = "mysql"
+    annotations = {}
+    labels = {}
   }
 }
 
