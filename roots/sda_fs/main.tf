@@ -158,7 +158,7 @@ module "sda2" {
   ci_host_name = "ci.c2.sboardwell.core.pscbdemos.com"
   cluster_name = module.eks2.cluster_name
   ingress_class = "alb"
-  install_ci = false
+  install_ci = var.install_ci
   kubeconfig_file = module.eks2.kubeconfig_filename
   bundle_dir =  var.bundle_dir
   oc_enabled = var.oc_enabled
