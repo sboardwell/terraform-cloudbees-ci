@@ -30,6 +30,7 @@ provider "helm" {
 
 locals {
   ci_host_name1 = "ci.${module.eks1.domain_name}"
+  additional_secret_data1 = {}
 }
 
 module "eks1" {
@@ -55,11 +56,14 @@ module "sda1" {
     helm = helm.eks1
   }
 
+  additional_secret_data = local.additional_secret_data1
   ci_host_name = local.ci_host_name1
   cluster_name = module.eks1.cluster_name
   ingress_class = "alb"
   install_ci = var.install_ci
   kubeconfig_file = module.eks1.kubeconfig_filename
+  bundle_dir =  var.bundle_dir
+  mc_bundle_dir =  var.mc_bundle_dir
   oc_enabled = var.oc_enabled
   secrets_file = var.secrets_file
   storage_class = var.storage_class
