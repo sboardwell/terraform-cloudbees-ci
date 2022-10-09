@@ -46,6 +46,10 @@ ACTION ?= plan
 %/O: ## Terraform output in json format on roots/% (for use with jq, etc)
 	@terraform -chdir=roots/$* output -json
 
+.PHONY: %/r
+%/r: ## Terraform output on roots/%
+	terraform -chdir=roots/$* refresh
+
 .ONESHELL:
 eks: ## Run terraform $ACTION on roots/eks
 	terraform -chdir=roots/eks $(ACTION)
