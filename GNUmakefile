@@ -1,3 +1,4 @@
+.ONESHELL:
 .DEFAULT_GOAL	:=  help
 SHELL			:=  bash
 MAKEFLAGS		+= --no-print-directory
@@ -34,12 +35,11 @@ ACTION ?= plan
 %/o: ## Terraform output on roots/%
 	terraform -chdir=roots/$* output
 
-.ONESHELL:
+.PHONY: eks
 eks: ## Run terraform $ACTION on roots/eks
 	terraform -chdir=roots/eks $(ACTION)
 
-
-.ONESHELL:
+.PHONY: sda
 sda: ## Run terraform $ACTION on roots/sda
 	terraform -chdir=roots/sda $(ACTION)
 
