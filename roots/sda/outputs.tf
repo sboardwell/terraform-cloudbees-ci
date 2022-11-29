@@ -1,3 +1,11 @@
+output "eks1_kubeconfig" {
+  value = module.eks1.kubeconfig_filename
+}
+
+output "eks1_kubeconfig_command" {
+  value = "export KUBECONFIG=${module.eks1.kubeconfig_filename}"
+}
+
 output "eks1_cluster_name" {
   value = module.eks1.cluster_name
 }

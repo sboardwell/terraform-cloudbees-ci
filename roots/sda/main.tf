@@ -31,6 +31,8 @@ provider "helm" {
 locals {
   ci_host_name1 = "ci.${module.eks1.domain_name}"
   additional_secret_data1 = {}
+  ci_chart_version = "3.49.1+22bb1d81f834"
+  // ci_chart_repository = "https://artifacts.cloudbees.com/repository/helm-internal/"
 }
 
 module "eks1" {
@@ -58,6 +60,8 @@ module "sda1" {
 
   additional_secret_data = local.additional_secret_data1
   ci_host_name = local.ci_host_name1
+  ci_chart_version = local.ci_chart_version
+  // ci_chart_repository = local.ci_chart_repository
   cluster_name = module.eks1.cluster_name
   ingress_class = "alb"
   install_ci = var.install_ci
@@ -65,6 +69,7 @@ module "sda1" {
   bundle_dir =  var.bundle_dir
   mc_bundle_dir =  var.mc_bundle_dir
   oc_enabled = var.oc_enabled
+  oc_image = var.oc_image
   secrets_file = var.secrets_file
   storage_class = var.storage_class
   ci_namespace = var.ci_namespace

@@ -65,7 +65,7 @@ variable "install_prometheus" {
 }
 
 variable "instance_types" {
-  default = ["m5.xlarge", "m5a.xlarge", "m4.xlarge"]
+  default = ["m5.large", "m5a.large", "m4.large", "m5a.large", "m5ad.large", "m5d.large", "m5dn.large", "m5n.large", "m5zn.large" ]
   type    = set(string)
 }
 

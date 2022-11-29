@@ -69,7 +69,7 @@ variable "cjoc_enabled" {
 }
 
 variable "cpu_request" {
-  default = 2
+  default = 1.5
   type    = number
 }
 

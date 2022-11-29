@@ -17,14 +17,10 @@ locals {
   aws_account_id         = data.aws_caller_identity.current.account_id
   aws_region             = data.aws_region.current.name
   cluster_auth_token     = data.aws_eks_cluster_auth.auth.token
-  cluster_endpoint       = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
   cluster_name           = "${var.cluster_name}${local.workspace_suffix}"
   default_storage_class  = "gp2"
   ingress_class_name     = "alb"
   kubeconfig_file        = "${abspath(path.root)}/${var.kubeconfig_file}_${local.cluster_name}"
-  oidc_issuer            = trimprefix(module.eks.cluster_oidc_issuer_url, "https://")
-  oidc_provider_arn      = module.eks.oidc_provider_arn
   this                   = toset(["this"])
   workspace_suffix       = terraform.workspace == "default" ? "" : "-${terraform.workspace}"
 
@@ -127,7 +123,7 @@ module "eks" {
 
   eks_managed_node_group_defaults = {
     min_size     = 1
-    max_size     = 4
+    max_size     = 10
     desired_size = 1
 
     create_iam_role       = false
@@ -142,6 +138,7 @@ module "eks" {
   eks_managed_node_groups = { for index, zone in local.availability_zones :
     "${local.cluster_name}-${zone}" => {
       subnet_ids = [module.vpc.private_subnets[index]]
+      capacity_type = "SPOT"
     }
   }
 
@@ -233,7 +230,7 @@ module "aws_load_balancer_controller" {
   cluster_name              = local.cluster_name
   cluster_security_group_id = module.eks.cluster_security_group_id
   node_security_group_id    = module.eks.node_security_group_id
-  oidc_issuer               = local.oidc_issuer
+  oidc_issuer               = trimprefix(module.eks.cluster_oidc_issuer_url, "https://")
 }
 
 module "cluster_autoscaler" {
@@ -244,7 +241,7 @@ module "cluster_autoscaler" {
   aws_region         = local.aws_region
   cluster_name       = local.cluster_name
   kubernetes_version = var.kubernetes_version
-  oidc_issuer        = local.oidc_issuer
+  oidc_issuer        = trimprefix(module.eks.cluster_oidc_issuer_url, "https://")
   patch_version      = 2
 }
 
@@ -255,7 +252,7 @@ module "ebs_driver" {
   aws_account_id   = local.aws_account_id
   aws_region       = local.aws_region
   cluster_name     = local.cluster_name
-  oidc_issuer      = local.oidc_issuer
+  oidc_issuer      = trimprefix(module.eks.cluster_oidc_issuer_url, "https://")
   volume_tags      = var.tags
 }
 
@@ -267,7 +264,7 @@ module "efs_driver" {
   aws_region             = local.aws_region
   cluster_name           = local.cluster_name
   node_security_group_id = module.eks.node_security_group_id
-  oidc_issuer            = local.oidc_issuer
+  oidc_issuer            = trimprefix(module.eks.cluster_oidc_issuer_url, "https://")
   private_subnet_ids     = module.vpc.private_subnets
   vpc_id                 = module.vpc.vpc_id
 }
@@ -278,7 +275,7 @@ module "external_dns" {
 
   aws_account_id  = local.aws_account_id
   cluster_name    = local.cluster_name
-  oidc_issuer     = local.oidc_issuer
+  oidc_issuer     = trimprefix(module.eks.cluster_oidc_issuer_url, "https://")
   route53_zone_id = local.domain_id
 }
 

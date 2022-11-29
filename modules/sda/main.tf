@@ -78,10 +78,11 @@ module "cloudbees_ci" {
   mc_bundle_data             = local.mc_bundle_data
   bundle_configmap_name      = var.oc_configmap_name
   chart_version              = var.ci_chart_version
+  chart_repository           = var.ci_chart_repository
   cjoc_image                 = var.oc_image
   cjoc_enabled               = var.oc_enabled
   controller_image           = var.controller_image
-  cpu_request                = 2
+  cpu_request                = 1
   create_servicemonitors     = var.create_servicemonitors
   extra_groovy_configuration = local.groovy_data
   host_name                  = var.ci_host_name
