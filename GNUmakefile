@@ -15,6 +15,14 @@ eks: ## Run terraform $ACTION on roots/eks
 sda: ## Run terraform $ACTION on roots/sda
 	terraform -chdir=roots/sda $(ACTION)
 
+.PHONY: %/i
+%/i: ## Run terraform init on roots/%
+	terraform -chdir=roots/$* init
+
+.PHONY: %/iu
+%/iu: ## Run terraform init -upgrade on roots/%
+	terraform -chdir=roots/$* init -upgrade
+
 .PHONY: %/p
 %/p: ## Run terraform plan on roots/%
 	terraform -chdir=roots/$* plan -out tfplan
@@ -38,6 +46,10 @@ sda: ## Run terraform $ACTION on roots/sda
 .PHONY: %/D
 %/D: ## Run terraform destroy on roots/% (auto-approve)
 	terraform -chdir=roots/$* destroy
+
+.PHONY: %/r
+%/r: ## Terraform output on roots/%
+	terraform -chdir=roots/$* refresh
 
 .PHONY: %/o
 %/o: ## Run terraform output on roots/%

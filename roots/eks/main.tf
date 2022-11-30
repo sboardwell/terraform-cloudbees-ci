@@ -18,6 +18,8 @@ provider "helm" {
   }
 }
 
+provider "sops" {}
+
 data "aws_caller_identity" "current" {}
 data "aws_availability_zones" "available" {}
 
@@ -31,21 +33,37 @@ data "aws_route53_zone" "domain" {
   name = var.domain_name
 }
 
+data "http" "myip" {
+  url = "https://ifconfig.me"
+}
+
+data "sops_file" "local_defaults" {
+  source_file = "${pathexpand("~/.secrets.yaml")}"
+}
+
+
 locals {
+  # local defaults
+  workspace_suffix       = terraform.workspace == "default" ? "" : "-${terraform.workspace}"
+  derived_user_abbr      = lower(substr(basename(pathexpand("~")), 0, 3))
+  derived_module_name    = basename(abspath(path.module))
+  derived_clustername    = "${local.derived_user_abbr}-tf-${local.derived_module_name}"
+
+  def_ssh_cidr_blocks    = ["${chomp(data.http.myip.response_body)}/32"]
   availability_zones     = slice(data.aws_availability_zones.available.names, 0, var.zone_count)
   aws_account_id         = data.aws_caller_identity.current.account_id
   aws_region             = data.aws_region.current.name
   cluster_auth_token     = data.aws_eks_cluster_auth.auth.token
   cluster_endpoint       = module.eks.cluster_endpoint
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-  cluster_name           = "${var.cluster_name}${local.workspace_suffix}"
+  cluster_name           = length(var.cluster_name) > 0 ? "${var.cluster_name}${local.workspace_suffix}" : "${local.derived_clustername}${local.workspace_suffix}"
   default_storage_class  = "gp2"
   ingress_class_name     = "alb"
   kubeconfig_file        = "${path.cwd}/${var.kubeconfig_file}"
   oidc_issuer            = trimprefix(module.eks.cluster_oidc_issuer_url, "https://")
   oidc_provider_arn      = module.eks.oidc_provider_arn
   this                   = toset(["this"])
-  workspace_suffix       = terraform.workspace == "default" ? "" : "-${terraform.workspace}"
+  ssh_cidr_blocks        = length(var.ssh_cidr_blocks) > 0 ? var.ssh_cidr_blocks : local.def_ssh_cidr_blocks
 
   vpc_tags = {
     "kubernetes.io/cluster/${local.cluster_name}" = "shared"
@@ -112,7 +130,7 @@ module "bastion" {
   key_name                 = var.key_name
   resource_prefix          = local.cluster_name
   source_security_group_id = module.eks.node_security_group_id
-  ssh_cidr_blocks          = var.ssh_cidr_blocks
+  ssh_cidr_blocks          = local.ssh_cidr_blocks
   subnet_id                = module.vpc.public_subnets.0
   vpc_id                   = module.vpc.vpc_id
 }
@@ -142,7 +160,7 @@ module "eks" {
 
   cluster_endpoint_private_access      = true
   cluster_endpoint_public_access       = true
-  cluster_endpoint_public_access_cidrs = var.ssh_cidr_blocks
+  cluster_endpoint_public_access_cidrs = local.ssh_cidr_blocks
 
   eks_managed_node_group_defaults = {
     min_size     = 1

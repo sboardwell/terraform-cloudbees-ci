@@ -1,13 +1,15 @@
 # Required variables
-variable "cluster_name" {
-  type = string
-}
-
 variable "domain_name" {
   type = string
 }
 
 # Optional variables
+variable "cluster_name" {
+  default = ""
+  type = string
+  description = "Defaults to <first-three-letters-of-user>-tf-<module-name> if empty."
+}
+
 variable "bastion_enabled" {
   default = false
   type    = bool
@@ -79,8 +81,9 @@ variable "kubernetes_version" {
 }
 
 variable "ssh_cidr_blocks" {
-  default = ["0.0.0.0/32"]
+  default = []
   type    = list(string)
+  description = "Defaults to the local users public IP if empty."
 
   validation {
     condition     = contains([for block in var.ssh_cidr_blocks : try(cidrhost(block, 0), "")], "") == false
