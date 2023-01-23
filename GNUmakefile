@@ -45,7 +45,7 @@ sda: ## Run terraform $ACTION on roots/sda
 
 .PHONY: %/D
 %/D: ## Run terraform destroy on roots/% (auto-approve)
-	terraform -chdir=roots/$* destroy
+	terraform -chdir=roots/$* destroy -auto-approve
 
 .PHONY: %/r
 %/r: ## Terraform output on roots/%
