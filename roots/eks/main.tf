@@ -223,6 +223,21 @@ module "eks" {
   }
 }
 
+# EKS module doesn't propagate tags to the ASGs so we do that here.
+resource "aws_autoscaling_group_tag" "tag" {
+  count = var.zone_count
+
+  autoscaling_group_name = module.eks.eks_managed_node_groups_autoscaling_group_names[count.index]
+  dynamic "tag" {
+    for_each = var.tags
+    content {
+      key                 = tag.key
+      propagate_at_launch = true
+      value               = tag.value
+    }
+  }
+}
+
 ################################################################################
 # Desired Size Hack
 ################################################################################
@@ -243,9 +258,6 @@ resource "null_resource" "update_desired_size" {
         --nodegroup-name ${element(split(":", each.value.node_group_id), 1)} \
         --scaling-config desiredSize=${local.desired_size}
     EOT
-  }
-}
-
 
 ################################################################################
 # Amazon Certificate Manager certificate(s)
