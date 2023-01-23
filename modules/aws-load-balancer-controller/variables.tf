@@ -43,3 +43,9 @@ variable "release_name" {
 variable "service_account_name" {
   default = "aws-load-balancer-controller"
 }
+
+variable "enable_ingress_rule" {
+  default     = true
+  type        = bool
+  description = "This is no longer needed after terraform-aws-modules/terraform-aws-eks #2250"
+}

@@ -24,7 +24,7 @@ data "aws_caller_identity" "current" {}
 data "aws_availability_zones" "available" {}
 
 data "aws_eks_cluster_auth" "auth" {
-  name = module.eks.cluster_id
+  name = module.eks.cluster_name
 }
 
 data "aws_region" "current" {}
@@ -49,6 +49,7 @@ locals {
   derived_module_name    = basename(abspath(path.module))
   derived_clustername    = "${local.derived_user_abbr}-tf-${local.derived_module_name}"
 
+  desired_size           = 2
   def_ssh_cidr_blocks    = ["${chomp(data.http.myip.response_body)}/32"]
   availability_zones     = slice(data.aws_availability_zones.available.names, 0, var.zone_count)
   aws_account_id         = data.aws_caller_identity.current.account_id
@@ -148,7 +149,7 @@ module "iam" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "18.30.3"
+  version = "19.4.3"
 
   cluster_name    = local.cluster_name
   cluster_version = var.kubernetes_version
@@ -163,9 +164,9 @@ module "eks" {
   cluster_endpoint_public_access_cidrs = local.ssh_cidr_blocks
 
   eks_managed_node_group_defaults = {
-    min_size     = 1
+    min_size     = 0
     max_size     = 4
-    desired_size = 1
+    desired_size = local.desired_size
 
     create_iam_role       = false
     create_security_group = false
@@ -222,6 +223,29 @@ module "eks" {
   }
 }
 
+################################################################################
+# Desired Size Hack
+################################################################################
+
+resource "null_resource" "update_desired_size" {
+  triggers = {
+    desired_size = local.desired_size
+  }
+
+  for_each = module.eks.eks_managed_node_groups
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+
+    # Note: this requires the awscli to be installed locally where Terraform is executed
+    command = <<-EOT
+      aws eks update-nodegroup-config \
+        --cluster-name ${module.eks.cluster_name} \
+        --nodegroup-name ${element(split(":", each.value.node_group_id), 1)} \
+        --scaling-config desiredSize=${local.desired_size}
+    EOT
+  }
+}
+
 
 ################################################################################
 # Amazon Certificate Manager certificate(s)
@@ -250,6 +274,7 @@ module "aws_load_balancer_controller" {
   cluster_security_group_id = module.eks.cluster_security_group_id
   node_security_group_id    = module.eks.node_security_group_id
   oidc_issuer               = local.oidc_issuer
+  enable_ingress_rule       = false
 }
 
 module "cluster_autoscaler" {
@@ -261,7 +286,7 @@ module "cluster_autoscaler" {
   cluster_name       = local.cluster_name
   kubernetes_version = var.kubernetes_version
   oidc_issuer        = local.oidc_issuer
-  patch_version      = 2
+  patch_version      = 0
 }
 
 module "ebs_driver" {
@@ -332,7 +357,7 @@ resource "null_resource" "update_kubeconfig" {
   count = var.create_kubeconfig_file ? 1 : 0
 
   provisioner "local-exec" {
-    command = "aws eks update-kubeconfig --name ${module.eks.cluster_id} --kubeconfig ${local.kubeconfig_file}"
+    command = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --kubeconfig ${local.kubeconfig_file}"
   }
 }
 

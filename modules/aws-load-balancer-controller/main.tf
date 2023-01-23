@@ -53,6 +53,7 @@ resource "aws_iam_role_policy_attachment" "this" {
 }
 
 resource "aws_security_group_rule" "this" {
+  count = var.enable_ingress_rule ? 1 : 0
   type                     = "ingress"
   protocol                 = "tcp"
   from_port                = 9443
