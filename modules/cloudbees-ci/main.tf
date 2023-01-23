@@ -105,7 +105,7 @@ locals {
         Annotations = var.ingress_annotations
       }
 
-      JavaOpts = "-XX:InitialRAMPercentage=50.0 -XX:MaxRAMPercentage=50.0 -Dcom.cloudbees.jenkins.cjp.installmanager.CJPPluginManager.enablePluginCatalogInOC=true -Dcom.cloudbees.masterprovisioning.kubernetes.KubernetesMasterProvisioning.deleteClaim=true"
+      JavaOpts = "-XX:InitialRAMPercentage=50.0 -XX:MaxRAMPercentage=50.0 -Dcom.cloudbees.jenkins.cjp.installmanager.CJPPluginManager.enablePluginCatalogInOC=true -Dcom.cloudbees.masterprovisioning.kubernetes.KubernetesMasterProvisioning.deleteClaim=true -Djenkins.security.ManagePermission=true -Djenkins.security.SystemReadPermission=true -Dhudson.security.ExtendedReadPermission=true"
 
       ExtraGroovyConfiguration = var.extra_groovy_configuration
     }
